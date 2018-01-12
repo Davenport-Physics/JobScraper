@@ -38,7 +38,7 @@ from urllib.request import urlopen
 
 def main(args):
 	
-	Jobs = JobSearchWithCareerBuilder("entry-software")
+	Jobs = JobSearchWithCareerBuilder("entry-software", Location = "dallas,tx", KeyWords=("C++ Java Python Programming  Physics Mathematics").split())
 	
 	return 0
 
@@ -51,8 +51,9 @@ class JobSearchWithCareerBuilder(object):
 		how many pages were found with basic job name.
 	
 	'''
-	def __init__(self,JobName,Location=""):
+	def __init__(self,JobName,Location="",KeyWords=[]):
 		
+		self.KeyWords = KeyWords
 		self.RawHTMLPages = []
 		self.RawHTMLPages.append( urlopen("https://www.careerbuilder.com/jobs-" + JobName + Location).read() )
 		
@@ -62,6 +63,9 @@ class JobSearchWithCareerBuilder(object):
 			for i in range(2, self.PageCount+1):
 				self.RawHTMLPages.append(urlopen("https://www.careerbuilder.com/jobs-" + JobName + Location + "?page_number=" + str(i)).read())
 		except: pass
+		
+		self.ParseJobLinksFromHTML()
+		self.VisitJobSites()
 		
 	def DeterminePageCount(self):
 		
@@ -82,7 +86,20 @@ class JobSearchWithCareerBuilder(object):
 					if "careerbuilder" in line or "saved-jobs" in line or "jobs" in line:
 						continue
 					else:
-						self.JobLinks.append(line)
+						self.JobLinks.append(line[6:-7])
+						
+	def VisitJobSites(self):
+		
+		self.Jobs = []
+		
+		for job in self.JobLinks
+			self.Jobs.append(str(urlopen("https://www.careerbuilder.com" + job).read()))
+			
+	def ParseDescriptions(self):
+		
+		for KeyWord in self.KeyWords:
+			for Job in self.Jobs:
+				continue #Stopped right here
 
 if __name__ == '__main__':
 	import sys
