@@ -60,16 +60,19 @@ class JobSearchWithCareerBuilder(object):
 		
 		self.DeterminePageCount()
 		
-		try:
 			
-			def RawHTMLPagesWorker(string):
+		def RawHTMLPagesWorker(string):
+				
+			try:
+					
 				self.RawHTMLPages.append(urlopen(string).read())
 				
+			except: print(string)
+				
 			
-			for i in range(2, self.PageCount+1):
-				Thread(target=RawHTMLPagesWorker, args=("https://www.careerbuilder.com/jobs-" + JobName + Location + "?page_number=" + str(i),)).start()
-				#self.RawHTMLPages.append(urlopen("https://www.careerbuilder.com/jobs-" + JobName + Location + "?page_number=" + str(i)).read())
-		except: pass
+		for i in range(2, self.PageCount+1):
+			Thread(target=RawHTMLPagesWorker, args=("https://www.careerbuilder.com/jobs-" + JobName + Location + "?page_number=" + str(i),)).start()
+			#self.RawHTMLPages.append(urlopen("https://www.careerbuilder.com/jobs-" + JobName + Location + "?page_number=" + str(i)).read())
 		
 		self.ParseJobLinksFromHTML()
 		self.VisitJobSites()
@@ -104,23 +107,34 @@ class JobSearchWithCareerBuilder(object):
 		self.Jobs = []
 		
 		def job_worker(string):
-			self.Jobs.append(str(urlopen(string).read()))
+			
+			try:
+				
+				self.Jobs.append(str(urlopen(string).read()))
+			
+			except: print(string)
 		
 		for job in self.JobLinks:
 			#print("https://www.careerbuilder.com" + job)
-			Thread(target=job_worker,args=("https://www.careerbuilder.com" + job,))
+			Thread(target=job_worker,args=("https://www.careerbuilder.com" + job,)).start()
 			#self.Jobs.append(str(urlopen("https://www.careerbuilder.com" + job).read()))
 			
 	def ParseDescriptions(self):
 		
 		fp = open("Links", "w")
-		for Job in self.Jobs:
+		for i, Job in enumerate(self.Jobs):
+			
 			HowManyKeyWordsFound = 0
+			
 			for Keyword in self.KeyWords:
-				if KeyWord in Job:
+				
+				if Keyword in Job:
+					
 					HowManyKeyWordsFound += 1
+					
 			if HowManyKeyWordsFound == len(self.KeyWords):
-				fp.writeln(Job)
+				
+				fp.write("https://www.careerbuilder.com" + self.JobLinks[i] + "\n")
 				
 		fp.close()
 
