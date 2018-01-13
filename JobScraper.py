@@ -22,6 +22,7 @@
 #  
 #  
 from urllib.request import urlopen
+from threading import Thread
 
 
 '''
@@ -38,7 +39,7 @@ from urllib.request import urlopen
 
 def main(args):
 	
-	Jobs = JobSearchWithCareerBuilder("entry-software", Location = "", KeyWords=("C++ Java Python Programming  Physics Mathematics").split())
+	Jobs = JobSearchWithCareerBuilder("entry-software", Location = "", KeyWords=("C++").split())
 	
 	return 0
 
@@ -60,8 +61,14 @@ class JobSearchWithCareerBuilder(object):
 		self.DeterminePageCount()
 		
 		try:
+			
+			def RawHTMLPagesWorker(string):
+				self.RawHTMLPages.append(urlopen(string).read())
+				
+			
 			for i in range(2, self.PageCount+1):
-				self.RawHTMLPages.append(urlopen("https://www.careerbuilder.com/jobs-" + JobName + Location + "?page_number=" + str(i)).read())
+				Thread(target=RawHTMLPagesWorker, args=("https://www.careerbuilder.com/jobs-" + JobName + Location + "?page_number=" + str(i),)).start()
+				#self.RawHTMLPages.append(urlopen("https://www.careerbuilder.com/jobs-" + JobName + Location + "?page_number=" + str(i)).read())
 		except: pass
 		
 		self.ParseJobLinksFromHTML()
@@ -96,9 +103,13 @@ class JobSearchWithCareerBuilder(object):
 		
 		self.Jobs = []
 		
+		def job_worker(string):
+			self.Jobs.append(str(urlopen(string).read()))
+		
 		for job in self.JobLinks:
-			print("https://www.careerbuilder.com" + job)
-			self.Jobs.append(str(urlopen("https://www.careerbuilder.com" + job).read()))
+			#print("https://www.careerbuilder.com" + job)
+			Thread(target=job_worker,args=("https://www.careerbuilder.com" + job,))
+			#self.Jobs.append(str(urlopen("https://www.careerbuilder.com" + job).read()))
 			
 	def ParseDescriptions(self):
 		
