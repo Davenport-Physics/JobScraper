@@ -43,7 +43,7 @@ import traceback
 
 def main(args):
 	
-	Jobs = JobSearchWithCareerBuilder("entry-software", Location = "", KeyWords=("programming").split())
+	Jobs = JobSearchWithCareerBuilder("entry-software", Location = "", KeyWords=("C++ Java Python programming").split())
 	
 	return 0
 
@@ -185,14 +185,36 @@ class JobSearchWithCareerBuilder(object):
 			
 	def ParseDescriptions(self):
 		
-		fp = open(self.JobName + self.Location, "w")
+		fp = open(self.JobName + self.Location + ".tsv", "w")
+		fp.write("Job Link\tPercentage")
+		PreviousCanonicalLink = ""
 		for i, Job in enumerate(self.Jobs):
+			
 			HowManyKeyWordsFound = 0
+			
 			for Keyword in self.KeyWords:
+				
 				if Keyword in self.GetJobRequirements(Job):
+					
 					HowManyKeyWordsFound += 1
-			if HowManyKeyWordsFound == len(self.KeyWords):
-				fp.write(self.FindCanonicalLinkFromJobData(Job) + "\n\n")
+					
+			if HowManyKeyWordsFound == 0:
+				
+				#If no Keywords are found, then this job listing is not worth looking at.
+				continue
+			
+			else:
+				
+				CanonicalLink = self.FindCanonicalLinkFromJobData(Job)
+				if CanonicalLink in PreviousCanonicalLink:
+					
+					continue
+					
+				else:
+					
+					KeyWordPercentage = (float(HowManyKeyWordsFound)/float(len(self.KeyWords)))*100.0
+					fp.write(CanonicalLink + "\t" + str(KeyWordPercentage) + "\n")
+					PreviousCanonicalLink = CanonicalLink
 				
 		fp.close()
 		
