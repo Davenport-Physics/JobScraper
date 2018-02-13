@@ -23,6 +23,10 @@
 #  
 from urllib.request import urlopen
 from threading import Thread
+from time import sleep
+
+import sys
+import traceback
 
 
 '''
@@ -39,7 +43,7 @@ from threading import Thread
 
 def main(args):
 	
-	Jobs = JobSearchWithCareerBuilder("entry-software", Location = "", KeyWords=("C++").split())
+	Jobs = JobSearchWithCareerBuilder("entry-software", Location = "", KeyWords=("programming").split())
 	
 	return 0
 
@@ -54,27 +58,82 @@ class JobSearchWithCareerBuilder(object):
 	'''
 	def __init__(self,JobName,Location="",KeyWords=[]):
 		
+		self.JobName = JobName
+		self.Location = Location
 		self.KeyWords = KeyWords
 		self.RawHTMLPages = []
-		self.RawHTMLPages.append( urlopen("https://www.careerbuilder.com/jobs-" + JobName + Location).read() )
 		
+		print(len(KeyWords))
+		
+		'''
+		
+			If the user passed a location, we have to modify the data
+			they gave us to fit into careerbuilder's standard url practices.
+		
+		'''
+		if len(Location) > 0:
+			Location = "-in-" + Location + "?location="
+		
+		'''
+		
+			Opens up the first page that can be discerned by the job name and
+			location information. Immediately determines how many pages were found.
+		
+		'''
+		self.RawHTMLPages.append( urlopen("https://www.careerbuilder.com/jobs-" + JobName + Location).read() )
 		self.DeterminePageCount()
 		
 			
+		'''
+		
+			Local function used for threading. Simple opens up urls and
+			adds them to the RawHTMLPages array.
+		
+		'''
 		def RawHTMLPagesWorker(string):
 				
 			try:
 					
 				self.RawHTMLPages.append(urlopen(string).read())
 				
-			except: print(string)
+			except:
+				print("RawHTMLPagesWorker:")
+				print(string)
 				
-			
-		for i in range(2, self.PageCount+1):
-			Thread(target=RawHTMLPagesWorker, args=("https://www.careerbuilder.com/jobs-" + JobName + Location + "?page_number=" + str(i),)).start()
-			#self.RawHTMLPages.append(urlopen("https://www.careerbuilder.com/jobs-" + JobName + Location + "?page_number=" + str(i)).read())
+		'''
 		
+			From the page count that was determined, we make an equivalent
+			amount of threads. Each of the threads will open up a page and
+			simple store the information provided into the RawHTMLPages array.
+		
+		'''
+		Threads = []
+		for i in range(2, self.PageCount+1):
+			Threads.append(Thread(target=RawHTMLPagesWorker, args=("https://www.careerbuilder.com/jobs-" + JobName + Location + "?page_number=" + str(i),)))
+			
+		for thread in Threads:
+			thread.start();
+		for thread in Threads:
+			thread.join()
+			
+		'''
+		
+			From RawHTMLPages, we attempt to parse the job listing links
+			that can be found. All of the links are placed into an array
+			called JobLinks
+		
+		'''
+			
 		self.ParseJobLinksFromHTML()
+		
+		'''
+		
+			Once we've obtained every link for every job listing, we
+			then visit each website. Each website has a Job Description
+			and Job Requirements section.
+		
+		'''
+		
 		self.VisitJobSites()
 		self.ParseDescriptions()
 		
@@ -105,38 +164,63 @@ class JobSearchWithCareerBuilder(object):
 	def VisitJobSites(self):
 		
 		self.Jobs = []
-		
-		def job_worker(string):
+		def VisitJobSitesWorker(string, SecondAttempt=False):
 			
 			try:
-				
 				self.Jobs.append(str(urlopen(string).read()))
-			
-			except: print(string)
+			except: 
+				if SecondAttempt is False:
+					VisitJobSitesWorker(string, SecondAttempt=True)
+					sleep(0.5)
 		
+		Threads = []
 		for job in self.JobLinks:
-			#print("https://www.careerbuilder.com" + job)
-			Thread(target=job_worker,args=("https://www.careerbuilder.com" + job,)).start()
-			#self.Jobs.append(str(urlopen("https://www.careerbuilder.com" + job).read()))
+			Threads.append(Thread(target=VisitJobSitesWorker, args=("https://www.careerbuilder.com" + job,)))
+		
+		for thread in Threads:
+			thread.start()
+			sleep(0.025)
+		for thread in Threads:
+			thread.join()
 			
 	def ParseDescriptions(self):
 		
-		fp = open("Links", "w")
+		fp = open(self.JobName + self.Location, "w")
 		for i, Job in enumerate(self.Jobs):
-			
 			HowManyKeyWordsFound = 0
-			
 			for Keyword in self.KeyWords:
-				
-				if Keyword in Job:
-					
+				if Keyword in self.GetJobRequirements(Job):
 					HowManyKeyWordsFound += 1
-					
 			if HowManyKeyWordsFound == len(self.KeyWords):
-				
-				fp.write("https://www.careerbuilder.com" + self.JobLinks[i] + "\n")
+				fp.write(self.FindCanonicalLinkFromJobData(Job) + "\n\n")
 				
 		fp.close()
+		
+	def FindCanonicalLinkFromJobData(self, RawJobData):
+		
+		googlebotIndex = RawJobData.find("googlebot")
+		CanonicalIndex = RawJobData.find("rel=\'canonical\'")
+		tempJobData = RawJobData[googlebotIndex:CanonicalIndex]
+		
+		httpsindex = tempJobData.find("https")
+		lastapos   = tempJobData.find("\'", httpsindex)
+		
+		return tempJobData[httpsindex:lastapos]
+		
+	def GetJobDescription(self, RawJobData):
+		
+		StartOfDescription = RawJobData.find("<h3>Job Description</h3>")
+		EndOfDescription = RawJobData.find("</div>",StartOfDescription)
+		
+		return RawJobData[StartOfDescription:EndOfDescription]
+		
+	def GetJobRequirements(self, RawJobData):
+		
+		StartOfRequirements = RawJobData.find("<h3>Job Requirements</h3>")
+		EndOfRequirements = RawJobData.find("</div>",StartOfRequirements)
+				
+		return RawJobData[StartOfRequirements:EndOfRequirements]
+		
 
 if __name__ == '__main__':
 	import sys
