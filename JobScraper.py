@@ -43,7 +43,9 @@ import traceback
 
 def main(args):
 	
-	Jobs = JobSearchWithCareerBuilder("entry-software", Location = "", KeyWords=("C++ Java Python programming").split())
+	#JobSearchWithCareerBuilder("entry-software", Location = "", KeyWords=("C++ Java Python programming").split())
+	#JobSearchWithCareerBuilder("software-developer", Location = "", KeyWords=("C++ Java Python programming").split())
+	JobSearchWithCareerBuilder("data", Location = "", KeyWords=("C++ Java Python programming").split())
 	
 	return 0
 
@@ -90,16 +92,14 @@ class JobSearchWithCareerBuilder(object):
 			adds them to the RawHTMLPages array.
 		
 		'''
-		def RawHTMLPagesWorker(string):
+		def RawHTMLPagesWorker(string, SecondAttempt=False):
 				
 			try:
-					
 				self.RawHTMLPages.append(urlopen(string).read())
-				
 			except:
-				print("RawHTMLPagesWorker:")
-				print(string)
-				
+				if SecondAttempt is False:
+					sleep(1.0)
+					RawHTMLPagesWorker(string, SecondAttempt=True)
 		'''
 		
 			From the page count that was determined, we make an equivalent
@@ -112,7 +112,8 @@ class JobSearchWithCareerBuilder(object):
 			Threads.append(Thread(target=RawHTMLPagesWorker, args=("https://www.careerbuilder.com/jobs-" + JobName + Location + "?page_number=" + str(i),)))
 			
 		for thread in Threads:
-			thread.start();
+			thread.start()
+			sleep(0.025)
 		for thread in Threads:
 			thread.join()
 			
@@ -186,7 +187,7 @@ class JobSearchWithCareerBuilder(object):
 	def ParseDescriptions(self):
 		
 		fp = open(self.JobName + self.Location + ".tsv", "w")
-		fp.write("Job Link\tPercentage")
+		fp.write("Job Link\tPercentage\n")
 		PreviousCanonicalLink = ""
 		for i, Job in enumerate(self.Jobs):
 			
