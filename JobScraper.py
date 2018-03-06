@@ -43,9 +43,19 @@ import traceback
 
 def main(args):
 	
-	#JobSearchWithCareerBuilder("entry-software", Location = "", KeyWords=("C++ Java Python programming").split())
-	#JobSearchWithCareerBuilder("software-developer", Location = "", KeyWords=("C++ Java Python programming").split())
-	JobSearchWithCareerBuilder("data", Location = "", KeyWords=("C++ Java Python programming").split())
+	JobSearchWithCareerBuilder("entry-software", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
+	JobSearchWithCareerBuilder("developer", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
+	JobSearchWithCareerBuilder("software-developer", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
+	JobSearchWithCareerBuilder("analyst", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
+	JobSearchWithCareerBuilder("technician", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
+	JobSearchWithCareerBuilder("research", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
+	JobSearchWithCareerBuilder("entry", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
+	JobSearchWithCareerBuilder("data", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
+	JobSearchWithCareerBuilder("physics", Location = "", KeyWords=("C++ Java Python programming physics").split())
+	JobSearchWithCareerBuilder("physics", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
+	JobSearchWithCareerBuilder("modeling", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
+	JobSearchWithCareerBuilder("model", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
+	JobSearchWithCareerBuilder("model", Location = "", KeyWords=("C++ Java Python programming physics").split())
 	
 	return 0
 
@@ -186,38 +196,48 @@ class JobSearchWithCareerBuilder(object):
 			
 	def ParseDescriptions(self):
 		
-		fp = open(self.JobName + self.Location + ".tsv", "w")
-		fp.write("Job Link\tPercentage\n")
-		PreviousCanonicalLink = ""
+		fp = None
+		HasWritten = False
+		
+		CanonicalLinks = []
 		for i, Job in enumerate(self.Jobs):
 			
 			HowManyKeyWordsFound = 0
-			
 			for Keyword in self.KeyWords:
-				
 				if Keyword in self.GetJobRequirements(Job):
-					
 					HowManyKeyWordsFound += 1
 					
 			if HowManyKeyWordsFound == 0:
-				
 				#If no Keywords are found, then this job listing is not worth looking at.
 				continue
-			
 			else:
 				
 				CanonicalLink = self.FindCanonicalLinkFromJobData(Job)
-				if CanonicalLink in PreviousCanonicalLink:
+				#This conditional checks to make sure the link is unique.
+				if self.VerifyUniqueCanonicalLink(CanonicalLinks, CanonicalLink) is True:
 					
-					continue
-					
-				else:
+					CanonicalLinks.append(CanonicalLink)
+					if HasWritten is False:
+						fp = open(self.JobName + self.Location + ".tsv", "w")
+						fp.write("Job Link\tPercentage\n")
+						HasWritten = True
 					
 					KeyWordPercentage = (float(HowManyKeyWordsFound)/float(len(self.KeyWords)))*100.0
 					fp.write(CanonicalLink + "\t" + str(KeyWordPercentage) + "\n")
 					PreviousCanonicalLink = CanonicalLink
-				
-		fp.close()
+		
+		if fp is not None:
+			fp.close()
+			
+	def VerifyUniqueCanonicalLink(self, CanonicalLinks, CanonicalLink):
+		
+		for link in CanonicalLinks:
+			if CanonicalLink in link:
+				#False if link is not unique
+				return False
+		
+		#True if the link is unique
+		return True
 		
 	def FindCanonicalLinkFromJobData(self, RawJobData):
 		
