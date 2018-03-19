@@ -43,22 +43,39 @@ import traceback
 
 def main(args):
 	
-	JobSearchWithCareerBuilder("entry-software", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
-	JobSearchWithCareerBuilder("developer", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
-	JobSearchWithCareerBuilder("software-developer", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
-	JobSearchWithCareerBuilder("analyst", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
-	JobSearchWithCareerBuilder("technician", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
-	JobSearchWithCareerBuilder("research", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
-	JobSearchWithCareerBuilder("entry", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
-	JobSearchWithCareerBuilder("data", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
-	JobSearchWithCareerBuilder("physics", Location = "", KeyWords=("C++ Java Python programming physics").split())
-	JobSearchWithCareerBuilder("physics", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
-	JobSearchWithCareerBuilder("modeling", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
-	JobSearchWithCareerBuilder("model", Location = "dallas,tx", KeyWords=("C++ Java Python programming physics").split())
-	JobSearchWithCareerBuilder("model", Location = "", KeyWords=("C++ Java Python programming physics").split())
+	KeyWords = "C++ Java Python programming physics math lua entry".split()
+	Locations = ["tx","plano,tx","dallas,tx"]
+	'''
+	JobTitles = ["entry-software", "developer", "software-developer", "analyst", 
+				"technician", "research", "entry", "physics", "math", "model", "modeling",
+				"science", "physicist","juniors","engine","game developer"]
+	'''
+	JobTitles = ["engine","game-developer"]
+				
+	for job in JobTitles:
+		for Location in Locations:
+			JobSearchWithCareerBuilder(job, Location = Location, KeyWords=KeyWords)
 	
 	return 0
-
+	
+def CombineWrittenFilesByLocation(Locations, JobTitles):
+	
+	for location in Locations:
+		fp = open("combined-" + location + ".tsv", "w")
+		jobs = []
+		for job in JobTitles:
+			if len(location) > 0:
+				location = "-in-" + location + "?location="
+			ReadLocationJobFile(location+job+".tsv")
+			
+		fp.close()
+	
+def ReadLocationJobFile(filename):
+	
+	fp = open(filename,"r")
+	fp.readline()
+	
+	fp.close()
 
 class JobSearchWithCareerBuilder(object):
 	
@@ -74,8 +91,6 @@ class JobSearchWithCareerBuilder(object):
 		self.Location = Location
 		self.KeyWords = KeyWords
 		self.RawHTMLPages = []
-		
-		print(len(KeyWords))
 		
 		'''
 		
@@ -105,7 +120,7 @@ class JobSearchWithCareerBuilder(object):
 		def RawHTMLPagesWorker(string, SecondAttempt=False):
 				
 			try:
-				self.RawHTMLPages.append(urlopen(string).read())
+				self.RawHTMLPages.append(urlopen(string,timeout=5).read())
 			except:
 				if SecondAttempt is False:
 					sleep(1.0)
@@ -178,11 +193,11 @@ class JobSearchWithCareerBuilder(object):
 		def VisitJobSitesWorker(string, SecondAttempt=False):
 			
 			try:
-				self.Jobs.append(str(urlopen(string).read()))
-			except: 
+				self.Jobs.append(str(urlopen(string, timeout=5).read()))
+			except:
 				if SecondAttempt is False:
+					sleep(1.0)
 					VisitJobSitesWorker(string, SecondAttempt=True)
-					sleep(0.5)
 		
 		Threads = []
 		for job in self.JobLinks:
