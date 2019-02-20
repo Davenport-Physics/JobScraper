@@ -169,14 +169,11 @@ class JobSearchWithCareerBuilder(object):
     def OpenDBConnection(self):
 
         try:
-            if not os.path.isfile("jobs.db"):
-                self.connection = sqlite3.connect("jobs.db")
-                self.executor = self.connection.cursor()
-                self.executor.execute("CREATE TABLE jobs (job text, percentage real, matched text)")
-                self.connection.commit()
-            else:
-                self.connection = sqlite3.connect("jobs.db")
-                self.executor = self.connection.cursor()
+            self.connection = sqlite3.connect("jobs.db")
+            self.executor = self.connection.cursor()
+            self.executor.execute("DROP TABLE IF EXISTS jobs")
+            self.executor.execute("CREATE TABLE jobs (job text, percentage real, matched text)")
+            self.connection.commit()
         except:
             print("DB connection refused ", sys.exc_info()[0])
         
