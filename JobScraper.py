@@ -45,24 +45,24 @@ import traceback
 
 def main(args):
     
-    KeyWords = "C++ Java Python programming physics math".split()
-    Locations = ["tx","plano,tx","dallas,tx",""]
-    
-    
-    '''
-    JobTitles = ["entry-software", "developer", "software-developer", "analyst", 
-                "technician", "research", "entry", "physics", "math", "model", "modeling",
-                "science", "physicist","juniors","engine","game developer"]
+    KeyWords, Locations, JobTitles = GetKeyWordsLocationsAndJobTitlesFromFile()
 
-    '''
-    JobTitles = ["front-end", "back-end", "junior", "entry", "developer", "physics", "technical"]
-    
-                
     for job in JobTitles:
         for Location in Locations:
             JobSearchWithCareerBuilder(job, Location = Location, KeyWords=KeyWords)
     
     return 0
+
+def GetKeyWordsLocationsAndJobTitlesFromFile():
+
+    fp   = open("info", "r")
+    file_info = []
+    for line in fp:
+        file_info.append(line)
+    fp.close()
+
+    return file_info[0].split(), file_info[1].split(), file_info[2].split()
+
     
 def CombineWrittenFilesByLocation(Locations, JobTitles):
     
@@ -172,7 +172,7 @@ class JobSearchWithCareerBuilder(object):
             if not os.path.isfile("jobs.db"):
                 self.connection = sqlite3.connect("jobs.db")
                 self.executor = self.connection.cursor()
-                self.executor.execute("CREATE TABLE jobs (job text, percentage real)")
+                self.executor.execute("CREATE TABLE jobs (job text, percentage real, matched text)")
                 self.connection.commit()
             else:
                 self.connection = sqlite3.connect("jobs.db")
@@ -233,10 +233,12 @@ class JobSearchWithCareerBuilder(object):
         CanonicalLinks = []
         for i, Job in enumerate(self.Jobs):
             
+            words_matched = ""
             HowManyKeyWordsFound = 0
             for Keyword in self.KeyWords:
                 if Keyword in self.GetJobRequirements(Job):
                     HowManyKeyWordsFound += 1
+                    words_matched += Keyword + " "
                     
             if HowManyKeyWordsFound == 0:
                 #If no Keywords are found, then this job listing is not worth looking at.
@@ -248,7 +250,7 @@ class JobSearchWithCareerBuilder(object):
                     
                     CanonicalLinks.append(CanonicalLink)
                     KeyWordPercentage = (float(HowManyKeyWordsFound)/float(len(self.KeyWords)))*100.0
-                    self.executor.execute("INSERT INTO jobs VALUES ('%s',%f)" % (CanonicalLink, KeyWordPercentage))
+                    self.executor.execute("INSERT INTO jobs VALUES ('%s',%f, '%s')" % (CanonicalLink, KeyWordPercentage, words_matched))
                     PreviousCanonicalLink = CanonicalLink
         
         self.connection.commit()
